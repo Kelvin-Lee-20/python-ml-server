@@ -5,6 +5,8 @@ from flask import Flask
 from flask import jsonify
 from flask_cors import CORS
 from sklearn.cluster import KMeans 
+from transformers import pipeline
+from flask import request
 
 def load_iris_data():
     iris = load_iris()
@@ -29,6 +31,20 @@ def kmeans(k):
         'target': iris.target.tolist(),
         'cluster_centers_': kmeans.cluster_centers_.tolist(),
         'y_kmeans': y_kmeans.tolist()
+    }
+    return jsonify(data)
+
+@app.route('/api/sa', methods=['GET'])
+def sa():
+    text = request.args.get('text')
+    if text is None or text.strip() == '':
+        return jsonify({"error": "Resource not found"}), 404
+
+    classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    result = classifier(text)
+    data = {
+        'label': result[0]['label'],
+        'score': result[0]['score']
     }
     return jsonify(data)
 
