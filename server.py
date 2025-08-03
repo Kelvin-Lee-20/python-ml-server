@@ -19,9 +19,6 @@ from tensorflow.keras.utils import get_file
 from tensorflow.keras.preprocessing import image
 import random
 
-ssl._create_default_https_context = ssl._create_unverified_context
-model = ResNet50(weights='imagenet')
-
 def load_iris_data():
     iris = load_iris()
     return iris
