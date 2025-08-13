@@ -18,6 +18,9 @@ from keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras.utils import get_file
 from tensorflow.keras.preprocessing import image
 import random
+from ultralytics import YOLO
+import cv2
+import io
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -93,5 +96,43 @@ def imageClassification():
         except Exception as e:
             return jsonify({"error": "Resource not found"}), 404
 
+@app.route('/api/objectdetect', methods=['POST'])
+def od():
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+    
+    file = request.files['file']
+
+    model = YOLO('yolov8n.pt')  # yolov8n.pt is the nano version (smallest)
+
+    try:
+
+        image_bytes = file.read()
+        img = Image.open(io.BytesIO(image_bytes))
+        
+        results = model(img)
+        
+        detections = []
+        for result in results:
+            for box in result.boxes:
+                class_id = int(box.cls)
+                confidence = float(box.conf)
+                class_name = model.names[class_id]
+                detections.append({
+                    'class_name': class_name,
+                    'confidence': confidence,
+                    'bbox': box.xyxy.tolist()[0]  # Convert tensor to list
+                })
+        
+        data = {
+            # 'class_names': model.names,
+            'detections': detections
+        }
+        return jsonify(data)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+        
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
